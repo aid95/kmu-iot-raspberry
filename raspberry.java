@@ -2,6 +2,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.Date;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.Random;
 
 import com.kt.smcp.gw.ca.comm.exception.SdkException;
@@ -18,7 +19,8 @@ import com.pi4j.io.gpio.GpioPin;
 import com.pi4j.io.gpio.GpioPinDigitalInput;
 import com.pi4j.io.gpio.PinPullResistance;
 
-class FloraSensor {
+class FloraSensor 
+{
 	private Double light;
 	private Double battery;
 	private Double temperature;
@@ -75,6 +77,8 @@ public class raspberry extends IMCallback
 		
 		Long transID;
 		Long timeOut = (long)3000;
+		Map<String,Double> numberRows = new HashMap<String, Double>();
+
 		try {
 			baseInfo = IMUtil.getBaseInfo("IoTSDK.properties");
 			tcpConnector.init(callback, baseInfo);
@@ -83,13 +87,15 @@ public class raspberry extends IMCallback
 
 			while (true) {
 				transID = IMUtil.getTransactionLongRoundKey4();
-				tcpConnector.requestNumColecData("battery", floraSensor.getBattery(), new Date(), transID);
-				tcpConnector.requestNumColecData("temperature", floraSensor.getTemperature(), new Date(), transID);
-				tcpConnector.requestNumColecData("light", floraSensor.getLight(), new Date(), transID);
-				tcpConnector.requestNumColecData("conductivity", floraSensor.getConductivity(), new Date(), transID);
-				tcpConnector.requestNumColecData("moisture", floraSensor.getMoisture(), new Date(), transID);
-				Thread.sleep(1000);
+				numberRows.put("battery", floraSensor.getBattery());
+				numberRows.put("temperature", floraSensor.getTemperature());
+				numberRows.put("light", floraSensor.getLight());
+				numberRows.put("conductivity", floraSensor.getConductivity());
+				numberRows.put("moisture", floraSensor.getMoisture());
+				tcpConnector.requestNumColecDatas(numberRows, new Date(), transID);
 				floraSensor.updateSensorData();
+				numberRows.clear();
+				Thread.sleep(1000);
 			}
 		} catch(SdkException e) {
 			System.out.println("Code :" + e.getCode() + " Message :" + e.getMessage());
@@ -98,30 +104,12 @@ public class raspberry extends IMCallback
 
     @Override
     public void handleColecRes(Long transId, String respCd) {
-		System.out.println("Collect Response. Transaction ID :" + transId + " Response Code : " + respCd);
     }
 
     @Override
     public void handleControlReq(Long transID, Map<String, Double> numberRows, Map<String, String> stringRows) {	
-		System.out.println("Handle Control Request Called. Transaction ID : " + transID);
-		System.out.println(numberRows.size()+" Number Type controls. " + stringRows.size() + " String Type controls.");
-			
-		if (numberRows.size() > 0) {
-			for(String key : numberRows.keySet()) {
-			System.out.println("Tag Stream :" + key + " Value:" + numberRows.get(key));
-			}
-		}
-
-		// LED control value form IoTMakers...
 		if(stringRows.size() > 0) {
 			for (String key : stringRows.keySet()) {
-				System.out.println("Tag Stream :" + key + " Value:" + stringRows.get(key));
-				if ("LED".equals(key)) {
-					if ("ON".equals(stringRows.get(key))) {
-					} else if ("OFF".equals(stringRows.get(key))) {
-					}
-				}
-
 				switch (key) {
 					case "battery":
 						break;
