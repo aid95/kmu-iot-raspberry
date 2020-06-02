@@ -1,0 +1,104 @@
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.util.Date;
+import java.util.Map;
+import java.util.Random;
+
+import com.kt.smcp.gw.ca.comm.exception.SdkException;
+import com.kt.smcp.gw.ca.gwfrwk.adap.stdsys.sdk.tcp.BaseInfo;
+import com.kt.smcp.gw.ca.gwfrwk.adap.stdsys.sdk.tcp.IMCallback;
+import com.kt.smcp.gw.ca.gwfrwk.adap.stdsys.sdk.tcp.IMTcpConnector;
+import com.kt.smcp.gw.ca.util.IMUtil;
+import com.pi4j.io.gpio.GpioController;
+import com.pi4j.io.gpio.GpioFactory;
+import com.pi4j.io.gpio.GpioPinDigitalOutput;
+import com.pi4j.io.gpio.PinState;
+import com.pi4j.io.gpio.RaspiPin;
+import com.pi4j.io.gpio.GpioPin;
+import com.pi4j.io.gpio.GpioPinDigitalInput;
+import com.pi4j.io.gpio.PinPullResistance;
+
+public class raspberry extends IMCallback  
+{
+    private GpioController gpio = null; //-삭제
+    private GpioPinDigitalOutput pin1 = null; //-삭제
+    private static GpioPinDigitalInput pin2 = null; //-삭제
+	private static Random rand = null;
+
+    public raspberry() {
+    	gpio = GpioFactory.getInstance();
+    }
+
+    public static void main(String[] args) throws Exception {
+		// callback fuction call...
+		raspberry callback = new raspberry();
+		IMTcpConnector tcpConnector = new IMTcpConnector();
+		BaseInfo baseInfo = null;
+			
+		Long transID;
+		Long timeOut = (long)3000;
+
+		rand = new Random();
+
+		try {
+			baseInfo = IMUtil.getBaseInfo("IoTSDK.properties");
+			tcpConnector.init(callback, baseInfo);
+			tcpConnector.connect(timeOut);	
+			tcpConnector.authenticate(timeOut);			
+						
+			while(true) {				
+				transID = IMUtil.getTransactionLongRoundKey4();
+
+				// Temp Teg value send...
+				tcpConnector.requestNumColecData("Temp", getValue(), new Date(), transID);
+				Thread.sleep(1000);
+
+				if(rand.nextInt(2) == 0) {
+				} else {
+					tcpConnector.requestNumColecData("Touch", (Double)1.0, new Date(), transID);
+				}
+			}
+		} catch(SdkException e) {
+			System.out.println("Code :" + e.getCode() + " Message :" + e.getMessage());
+		}
+    }
+
+    private static Double getValue() throws Exception {
+		Double temperature;
+        temperature = 100.0; //rand.nextDouble();
+	    return temperature;
+    }
+
+    @Override
+    public void handleColecRes(Long transId, String respCd) {
+		System.out.println("Collect Response. Transaction ID :" + transId + " Response Code : " + respCd);	
+    }
+
+    @Override
+    public void handleControlReq(Long transID, Map<String, Double> numberRows, Map<String, String> stringRows) {	
+		System.out.println("Handle Control Request Called. Transaction ID : " + transID);
+		System.out.println(numberRows.size()+" Number Type controls. " + stringRows.size() + " String Type controls.");
+		
+		if(numberRows.size() > 0) {
+			for(String key : numberRows.keySet()) {
+				System.out.println("Tag Stream :" + key + " Value:" + numberRows.get(key));
+			}
+		}
+
+		// LED control value form IoTMakers...
+		if(stringRows.size() > 0) {
+			for(String key : stringRows.keySet()) {
+				System.out.println("Tag Stream :" + key + " Value:" + stringRows.get(key));
+				if("LED".equals(key)) {
+					if("ON".equals(stringRows.get(key))) {
+						System.out.println("LED ON");
+						//pin1.high();
+					} else if("OFF".equals(stringRows.get(key))) {
+						System.out.println("LED OFF");
+						//pin1.low();
+					}
+				}
+			}
+		}
+    }
+}
