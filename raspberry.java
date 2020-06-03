@@ -33,6 +33,11 @@ class FloraSensor
 		floraMacAddress = mac;
 	}
 
+	public void clearHistory() throws Exception {
+			Runtime run = Runtime.getRuntime();
+			run.exec("sudo python3 demo.py --backend bluepy clear-history " + floraMacAddress);
+	}
+
 	public void updateSensorData() throws Exception {
 		Runtime run = Runtime.getRuntime();
 		Process proc= run.exec("sudo python3 demo.py --backend bluepy poll " + floraMacAddress);
@@ -77,6 +82,7 @@ public class raspberry extends IMCallback
 		
 		Long transID;
 		Long timeOut = (long)3000;
+		Integer clearTime = 0;
 		Map<String,Double> numberRows = new HashMap<String, Double>();
 
 		try {
@@ -86,6 +92,8 @@ public class raspberry extends IMCallback
 			tcpConnector.authenticate(timeOut);
 
 			while (true) {
+				Thread.sleep(3000);
+
 				transID = IMUtil.getTransactionLongRoundKey4();
 				numberRows.put("battery", floraSensor.getBattery());
 				numberRows.put("temperature", floraSensor.getTemperature());
@@ -95,7 +103,12 @@ public class raspberry extends IMCallback
 				tcpConnector.requestNumColecDatas(numberRows, new Date(), transID);
 				floraSensor.updateSensorData();
 				numberRows.clear();
-				Thread.sleep(1000);
+
+				clearTime += 3000;
+				if (clearTime >= 300000) {
+					floraSensor.clearHistory();
+					clearTime = 0;
+				}
 			}
 		} catch(SdkException e) {
 			System.out.println("Code :" + e.getCode() + " Message :" + e.getMessage());
