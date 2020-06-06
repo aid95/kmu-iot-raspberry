@@ -69,6 +69,7 @@ class FloraSensor
 public class raspberry extends IMCallback  
 {
 	private static FloraSensor floraSensor = null;
+	private static Double isNotifyBattery = 0.0;
 
     public raspberry() {
 		floraSensor = new FloraSensor("C4:7C:8D:66:49:DC");
@@ -100,6 +101,7 @@ public class raspberry extends IMCallback
 				numberRows.put("light", floraSensor.getLight());
 				numberRows.put("conductivity", floraSensor.getConductivity());
 				numberRows.put("moisture", floraSensor.getMoisture());
+				numberRows.put("isNotifyBattery", isNotifyBattery);
 				tcpConnector.requestNumColecDatas(numberRows, new Date(), transID);
 				floraSensor.updateSensorData();
 				numberRows.clear();
@@ -124,7 +126,13 @@ public class raspberry extends IMCallback
 		if(stringRows.size() > 0) {
 			for (String key : stringRows.keySet()) {
 				switch (key) {
-					case "battery":
+					case "lowBattery":
+						if (isNotifyBattery < 1) {
+							/**
+							 * @todo 카카오톡 나에게 보내기 API를 이용한 메세지 전송 구현
+							 */
+							isNotifyBattery = 2.0;
+						}
 						break;
 					default:
 						break;
