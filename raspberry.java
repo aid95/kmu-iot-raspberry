@@ -105,19 +105,37 @@ public class raspberry extends IMCallback
 				numberRows.put("isNotifyBattery", isNotifyBattery);
 				numberRows.put("isNotifyMst", isNotifyMoisture);
 				tcpConnector.requestNumColecDatas(numberRows, new Date(), transID);
-				floraSensor.updateSensorData();
-				numberRows.clear();
 
 				clearTime += 3000;
 				if (clearTime >= 300000) {
 					floraSensor.clearHistory();
 					clearTime = 0;
 				}
+
+				numberRows.clear();
+				floraSensor.updateSensorData();
+				updateNotifyState();
 			}
 		} catch(SdkException e) {
 			System.out.println("Code :" + e.getCode() + " Message :" + e.getMessage());
 		}
-    }
+	}
+	
+	public static void updateNotifyState() {
+		if (isNotifyBattery > 1 && floraSensor.getBattery() > 30) {
+			/**
+			 * 배터리가 충전된 후 처리
+			 */
+			isNotifyBattery = 0.0;
+		}
+
+		if (isNotifyMoisture > 1 && floraSensor.getMoisture() > 10) {
+			/**
+			 * 수분이 보충된 후 처리
+			 */
+			isNotifyMoisture = 0.0;
+		}
+	}
 
     @Override
     public void handleColecRes(Long transId, String respCd) {
@@ -134,11 +152,6 @@ public class raspberry extends IMCallback
 							 * @todo 카카오톡 나에게 보내기 API를 이용한 메세지 전송 구현
 							 */
 							isNotifyBattery = 2.0;
-						} else if (isNotifyBattery > 1 && floraSensor.getBattery() > 30) {
-							/**
-							 * 배터리가 충전된 후 처리
-							 */
-							isNotifyBattery = 0.0;
 						}
 						break;
 
@@ -148,11 +161,6 @@ public class raspberry extends IMCallback
 							 * @todo 카카오톡 나에게 보내기 API를 이용한 메세지 전송 구현
 							 */
 							isNotifyMoisture = 2.0;
-						} else if (isNotifyMoisture > 1 && floraSensor.getMoisture() > 5) {
-							/**
-							 * 수분이 보충된 후 처리
-							 */
-							isNotifyMoisture = 0.0;
 						}
 						break;
 
