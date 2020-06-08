@@ -70,6 +70,7 @@ public class raspberry extends IMCallback
 {
 	private static FloraSensor floraSensor = null;
 	private static Double isNotifyBattery = 0.0;
+	private static Double isNotifyMoisture = 0.0;
 
     public raspberry() {
 		floraSensor = new FloraSensor("C4:7C:8D:66:49:DC");
@@ -102,6 +103,7 @@ public class raspberry extends IMCallback
 				numberRows.put("conductivity", floraSensor.getConductivity());
 				numberRows.put("moisture", floraSensor.getMoisture());
 				numberRows.put("isNotifyBattery", isNotifyBattery);
+				numberRows.put("isNotifyMst", isNotifyMoisture);
 				tcpConnector.requestNumColecDatas(numberRows, new Date(), transID);
 				floraSensor.updateSensorData();
 				numberRows.clear();
@@ -132,8 +134,28 @@ public class raspberry extends IMCallback
 							 * @todo 카카오톡 나에게 보내기 API를 이용한 메세지 전송 구현
 							 */
 							isNotifyBattery = 2.0;
+						} else if (isNotifyBattery > 1 && floraSensor.getBattery() > 30) {
+							/**
+							 * 배터리가 충전된 후 처리
+							 */
+							isNotifyBattery = 0.0;
 						}
 						break;
+
+					case "lowMoisture":
+						if (isNotifyMoisture < 1) {
+							/**
+							 * @todo 카카오톡 나에게 보내기 API를 이용한 메세지 전송 구현
+							 */
+							isNotifyMoisture = 2.0;
+						} else if (isNotifyMoisture > 1 && floraSensor.getMoisture() > 5) {
+							/**
+							 * 수분이 보충된 후 처리
+							 */
+							isNotifyMoisture = 0.0;
+						}
+						break;
+
 					default:
 						break;
 				}
